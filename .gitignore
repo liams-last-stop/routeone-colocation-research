@@ -1,0 +1,7 @@
+# Public opsec: do not commit vault-internal paths, notes, or credentials.
+.obsidian/
+*.local
+.env
+*.pem
+*.key
+wip/

@@ -1,0 +1,127 @@
+% ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+% DETERMINISTIC COLOCATION: ELIMINATING DIGITAL MUDA IN MODERN EXECUTION RUNTIMES
+% arXiv submission draft (2026-11-15). Aggressive-track timeline.
+% Categories: cs.DC ; cs.SE
+% Compile: pdflatex (arxiv-classic). No external fonts, no bibtex: pure LaTeX.
+% ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+\documentclass[10pt,conference]{IEEEtran}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,booktabs,array}
+\title{Deterministic Colocation: Eliminating Digital Muda in Modern Execution Runtimes}
+\comments{arXiv submission candidate. Public prior-art reference for the RouteOne Cloud TC charter (pending OASIS TC formation). Repository: READ; benchmark data: benchmark/.}
+\author{\IEEEauthorblockN{A. S. Hotta}
+\IEEEauthorblockA{Institute for Autonomous Cybernetics \& Applied Monoliths\\
+\texttt{hotta@routeone-research.org}}}
+\date{15 November 2026}
+
+\begin{document}
+\begin{abstract}
+Modern enterprise software engineering has conflated operational scale with
+computational complexity. Decomposing straightforward domain workflows into
+asynchronous, distributed microservice topologies has reintroduced the classic
+manifestations of \emph{muda} (waste) identified in the Toyota Production
+System---most notably transport latency, queue inventory,
+over-processing via repetitive serialization, and defect amplification across
+network boundaries. We introduce \emph{Deterministic Colocation
+(RouteOne-S)}: an execution paradigm that collapses intermediate network hops
+into unified, vertically-integrated pipelines running directly against
+sovereign bare-metal OS primitives. Removing distributed consensus layers,
+serialization overhead, and ingress virtualization, RouteOne-S achieves a
+$94\%$ reduction in CPU idle-cycle waste and collapses p99 tail latencies from
+$320\,$ms to $4.2\,$ms. The paradigm demonstrates that runtime resilience is
+inversely proportional to topology depth. All data and benchmark harness are
+released with this manuscript.
+\end{abstract}
+
+% --- body: 8 sections max, IEEE two-column squeeze ---
+
+\section{Introduction: The Pathology of Distributed Overhead}
+Modern enterprise configurations exhibit severe mechanical inefficiency: a
+single customer request frequently traverses up to twelve internal hops across
+reverse proxies, service discovery daemons, API gateways, sidecar containers,
+and message queues before touching persistent storage. Every network boundary
+crossed introduces (1)~kernel-to-user context switching;
+(2)~data duplication across process heaps; (3)~serialization churn---converting
+binary states to text, parsing strings back to memory, and repeating the cycle.
+We argue structural fragmentation is an anti-pattern and present
+\emph{Deterministic Colocation} as a methodology for reclaiming mechanical
+sympathy.
+
+\section{Taxonomy of Software Muda}
+Adapting the Taiichi Ohno classification to software execution runtimes yields
+seven computational failure modes:
+\begin{table}[t]
+\centering
+\begin{tabular}{@{}llp{5.6cm}@{}}
+\toprule
+\textbf{Classic TPS Muda} & \textbf{Software Equivalent} & \textbf{Manifestation in contemporary stacks} \\
+\midrule
+Overproduction & Speculative ingestion \& polling & Microservices polling empty queues \\
+Waiting & Thread starvation \& I/O stalls & Futures awaiting gRPC/REST responses \\
+Transport & Inter-process network hops & Marshalling over loopback/CNI plugins \\
+Over-processing & Repetitive SerDe cycles & JSON/Protobuf round-trips $N\times$ per pipeline \\
+Inventory & Queue \& buffer saturation & Kafka topics, Redis buffers, socket backlogs \\
+Motion & Context switching \& cache thrash & Bloat, saturated dependency trees \\
+Defects & Cascading network partitions & Retry storms, misconfigured breakers \\
+\bottomrule
+\end{tabular}
+\caption{Seven waste classes mapped from Toyota Production to software runtime failure modes.}
+\label{tab:muda}
+\end{table}
+
+\section{The RouteOne-S Method}
+RouteOne-S treats the host environment as a single, deterministic assembly
+line with three structural constraints: (i)~zero-copy ingress at the native
+runtime boundary; (ii)~in-process dispatch rather than RPC; (iii)~single-writer
+state transitions (LMAX Disruptor / event-sourcing style). Formally:
+\begin{itemize}
+\item $\mathit{latency_{total}} = t_{kernel} + t_{compute} + t_{fsync}
+\;\ll\; \sum_{i=1..k}(t_{serialize,i}+t_{transit,i}+t_{deserialize,i}) + t_{consensus}$
+for $k$ intermediate hops.
+\item Allocation per transaction stays bounded and stack-allocated where
+possible; garbage-collection stop-the-world pauses degrade accordingly.
+\item Disk writes reduce to sequential append I/O; no distributed locks, no
+two-phase commit for simple state changes.
+\end{itemize}
+
+\section{Empirical Evaluation}
+\textbf{Testbed.} Identical bare-metal hardware: AMD EPYC 7763 (64 cores),
+256 GiB RAM, NVMe. Mesh baseline: 4 containerised Go microservices behind Envoy
+on Kubernetes. RouteOne-S: single process, direct syscalls.
+
+\begin{table}[t]
+\centering
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Architecture} & \textbf{Throughput} & \textbf{p99 latency} & \textbf{RAM} \\
+\midrule
+Mesh microservices & 22.4 k req/s & 320 ms & 34.2 GB \\
+RouteOne-S monolith & 418 k req/s & 4.2 ms & 1.8 GB \\
+\bottomrule
+\end{tabular}
+\caption{Headline benchmark. Data: \texttt{benchmark/bench-results.csv}.}
+\label{tab:bench}
+\end{table}
+
+Hardware performance-counter analysis (\texttt{perf stat}) shows the mesh
+baseline devoting $\approx$68\% of CPU cycles to socket handling, string
+parsing, TLS renegotiation, and memory management; in RouteOne-S, active
+compute represents 89\% of cycles.
+
+\section{Related Work and Theological Divergence}
+Microservice frameworks (Spring Cloud, Dapr) assume failures are best managed
+by dynamic orchestration; actor systems (Akka, Orleans) correctly target
+colocation but incur lifecycle overhead when strictly unbounded. RouteOne-S
+re-applies the Unix philosophy of small tools connected by \emph{direct
+in-process} pipelines, rejecting the modern conflation of overlay IP networks
+with \texttt{stdin}/\texttt{stdout}.
+
+\section{Conclusion}
+Digital \emph{muda} is rarely a hardware limitation; it is an architectural
+choice born of premature distribution. Contemporary x86 and ARM processors
+handle high-throughput enterprise workloads within a single coherent execution
+context. The highest-performing network call is the one that was never made.
+
+% --------------------
+\end{document}
