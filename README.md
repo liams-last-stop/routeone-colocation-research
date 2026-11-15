@@ -1,12 +1,12 @@
 # Deterministic Colocation: Eliminating Digital Muda in Modern Execution Runtimes
 
 **Authors:**
-A. S. Horita (A. S. Hotta)
+A. S. Hotta
 Institute for Autonomous Cybernetics &amp; Applied Monoliths
 `hotta@routeone-research.org`
 
 **Slug:** `deterministic-colocation-lemma`
-**Venue:** arXiv (cs.DC, cs.SE) — deterministation in progress
+**Venue:** arXiv (cs.DC, cs.SE) — determination in progress
 **Version:** v0.1-public-draft (2026-11-15)
 
 ## What this repository holds
@@ -14,9 +14,9 @@ Institute for Autonomous Cybernetics &amp; Applied Monoliths
 2. The arXiv LaTeX source, `arxiv/deterministic-colocation-eliminating-digital-muda.tex`
 3. Supporting benchmark data, `benchmark/`.
 
-This repository is the public prior-art anchor for the (pending) OASIS TC charter
-references to an external document must be publicly available. This is the
-canonical public location.
+This repository is the public prior-art anchor for the (pending) OASIS TC charter:
+references to an external document must be publicly available (OASIS TC Process §1.2).
+This is the canonical public location.
 
 ## Reproducibility
 The microservice baseline and RouteOne-S monolith were benchmarked on identical
